@@ -99,3 +99,53 @@ If you wish to use Autoware.AI, the previous version of Autoware based on ROS 1,
 - [Autoware Foundation homepage](https://www.autoware.org/)
 - [Support guidelines](https://autowarefoundation.github.io/autoware-documentation/main/support/support-guidelines/)
 - [CI metrics](https://autowarefoundation.github.io/autoware-ci-metrics/)
+
+
+
+# Local tries
+
+source /opt/ros/humble/setup.bash
+vcs import src < autoware.repos
+vcs pull src
+colcon build --packages-up-to autoware_v2x --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+colcon build  --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+rocker -e LIBGL_ALWAYS_SOFTWARE=1 --x11 --user --privileged --volume $HOME/workspace/autoware_docker --volume $HOME/data -- ghcr.io/autowarefoundation/autoware:humble-2024.01-cuda-amd64
+rocker -e LIBGL_ALWAYS_SOFTWARE=1 --x11 --user --privileged --volume $HOME/workspace/autoware_docker --volume $HOME/data -- ghcr.io/autowarefoundation/autoware:humble-2024.01-cuda-amd64
+docker pull ghcr.io/autowarefoundation/autoware:humble-2024.01-cuda-amd64
+https://github.com/autowarefoundation/autoware/pkgs/container/autoware/246009897?tag=humble-2024.01-cuda-amd64
+https://github.com/orgs/autowarefoundation/discussions/4990
+
+
+./docker/run.sh --map-path $HOME/data/map/sample-map-rosbag ros2 launch autoware_launch planning_simulator.launch.xml map_path:=/autoware_map vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
+
+
+
+
+# Running first tests 
+
+rocker --nvidia --x11 --user --privileged --volume /home/fatihyuce/workspace/autoware_docker --volume /home/fatihyuce/data --network=v2x_net --name autoware_1 --oyr-run-arg "--ip 10.0.0.2 --hostname autoware_1" -- ghcr.io/autowarefoundation/autoware:universe-cuda
+rocker --nvidia --x11 --user --privileged --volume /home/fatihyuce/workspace/autoware_docker --volume /home/fatihyuce/data --network=v2x_net --name autoware_2 --oyr-run-arg "--ip 10.0.0.3 --hostname autoware_2" -- ghcr.io/autowarefoundation/autoware:universe-cuda
+
+
+
+
+cd /home/fatihyuce/workspace/autoware_docker/
+
+
+source /home/fatihyuce/workspace/autoware_docker/src/v2x/autowarev2x/setup.sh
+
+ros2 launch autoware_launch planning_simulator.launch.xml map_path:=/home/fatihyuce/data/maps/sample-map-planning vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
+
+# Running simulations
+
+rocker --nvidia --x11 --user --volume /home/fatihyuce/workspace/autoware_docker --volume /home/fatihyuce/workspace/data -- ghcr.io/autowarefoundation/autoware:universe-cuda
+
+
+sudo apt update
+rosdep update
+rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
+
+
+source install/setup.bash
+ros2 launch scenario_test_runner scenario_test_runner.launch.py map_path:=/home/fatihyuce/data/maps/sample-map-planning sensor_model:=sample_sensor_kit vehicle_model:=sample_vehicle scenario:=/home/fatihyuce/data/scenarios/busy_kashiwa_scenario.yaml launch_autoware:=true
+
